@@ -14,9 +14,10 @@ class AuthHandler():
     algorithm = os.environ.get('jwt.algorithm')
     validity = datetime.timedelta(hours = 0, minutes = 30, seconds = 0)
 
-    def get_token(self, email):
+    def get_token(self, email, user_id):
         payload = {
             # ignore the fucking deprecated info. Using the not deprecated code on this python function said the method doesnt exist i love python guys why the fuck do i love python so much what the fuck
+            "user_id": user_id,
             "email": email,
             "exp": datetime.datetime.utcnow() + self.validity,
             "iat": datetime.datetime.utcnow()
@@ -27,7 +28,7 @@ class AuthHandler():
     def decode_token(self, token):
         try:
             payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
-            return payload['email']
+            return payload
         except jwt.ExpiredSignatureError:
             print("expired")
             raise HTTPException(status_code=401, detail='Signature has expired')

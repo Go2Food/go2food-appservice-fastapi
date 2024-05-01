@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from schemas.account_schema import account_list_serial, account_pass_prot_list_serial
+from schemas.account_schema import account_id_list_serial, account_pass_prot_list_serial
 from models.account_model import Account
-from models.model_schemas import PassCheck, ValidateToken
+from models.model_schemas import PassCheck, ValidateToken, NewAccountGoogle, NewAccount
 from functions.bcrypt_handler import bcrypt_handler_class
 from functions.jwt_authorization import AuthHandler
 from bson import ObjectId
@@ -34,7 +34,7 @@ def search_account(username:str):
 
 # register an account to the database
 @router.post("/register/")
-async def register(account: Account):
+async def register(account: NewAccount):
     account = dict(account)
     check = collection.find_one({"email": account.get("email")})
 
@@ -64,18 +64,40 @@ async def login(form: PassCheck):
         return {"detail": "account not found"}
 
     if (checkValue):
-        token = jwt_handler.get_token(form.get('email'))
+        id = account_id_list_serial(collection.find({"email":form.get("email")}))[0].get("_id")
+        token = jwt_handler.get_token(form.get('email'), id)
         return {"detail": token}
     else:
         return {"detail": "password doesn't match"}
     
+# when logging in using googles sign in with popup
+@router.post("/sign-in-google/")
+async def SigninWithGoogle(form: NewAccountGoogle):
+    form = dict(form)
+    account = collection.find_one({"email":form.get("email")})
+    
+    # if account is already in the database
+    if (account is not None):
+        id = account_id_list_serial(collection.find({"email":form.get("email")}))[0].get("_id")
+        token = jwt_handler.get_token(form.get('email'), id)
+        return {"detail": token}
+    # if not in database add it to the database
+    else:
+        try:
+            collection.insert_one(form)
+        except:
+            return {"detail": "sign in failed"}
+        id = account_id_list_serial(collection.find({"email":form.get("email")}))[0].get("_id")
+        token = jwt_handler.get_token(form.get('email'), id)
+        return {"detail": token}
+    
 @router.post("/validate_token/")
 async def validate_token(form: ValidateToken):
     form = dict(form)
-    email = jwt_handler.decode_token(form.get("token"))
+    details = jwt_handler.decode_token(form.get("token"))
 
-    if (email):
-        return {"detail": email}
+    if (details):
+        return {"detail": details}
 
 
 # add new account to the database

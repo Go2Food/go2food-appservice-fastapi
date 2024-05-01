@@ -16,9 +16,17 @@ def password_protected(account) -> dict:
         "password": "*********",
     }
 
+def account_id(account) -> dict:
+    return {
+        "_id": str(account["_id"])
+    }
+
 
 def account_list_serial(accounts) -> list:
     return[individual_serial(account) for account in accounts]
 
 def account_pass_prot_list_serial(accounts) -> list:
     return[password_protected(account) for account in accounts]
+
+def account_id_list_serial(accounts) -> list:
+    return[account_id(account) for account in accounts]

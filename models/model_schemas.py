@@ -5,6 +5,10 @@ class NewAccount(BaseModel):
     username: str
     password: str
 
+class NewAccountGoogle(BaseModel):
+    email: str
+    username: str
+
 class PassCheck(BaseModel):
     email: str
     password: str
