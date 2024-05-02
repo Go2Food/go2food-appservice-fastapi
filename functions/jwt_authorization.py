@@ -12,7 +12,7 @@ class AuthHandler():
     security = HTTPBearer()
     secret = os.environ.get('jwt.secret_key')
     algorithm = os.environ.get('jwt.algorithm')
-    validity = datetime.timedelta(hours = 0, minutes = 30, seconds = 0)
+    validity = datetime.timedelta(hours = 48, minutes = 0, seconds = 0)
 
     def get_token(self, email, user_id):
         payload = {
