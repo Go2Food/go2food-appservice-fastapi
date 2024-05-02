@@ -1,2 +1,3 @@
 fastmongo
 __pycache__
+.env
