@@ -15,3 +15,6 @@ class PassCheck(BaseModel):
 
 class ValidateToken(BaseModel):
     token: str
+
+class GetById(BaseModel):
+    id: str

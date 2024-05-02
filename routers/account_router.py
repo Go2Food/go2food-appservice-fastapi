@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from schemas.account_schema import account_id_list_serial, account_pass_prot_list_serial
 from models.account_model import Account
-from models.model_schemas import PassCheck, ValidateToken, NewAccountGoogle, NewAccount
+from models.model_schemas import PassCheck, ValidateToken, NewAccountGoogle, NewAccount, GetById
 from functions.bcrypt_handler import bcrypt_handler_class
 from functions.jwt_authorization import AuthHandler
 from bson import ObjectId
@@ -15,21 +15,22 @@ jwt_handler = AuthHandler()
 
 # get all the accounts as a list
 @router.get("/get_all_accounts")
-def get_all_accounts():
+async def get_all_accounts():
     accounts = account_pass_prot_list_serial(collection.find())
     return accounts
 
 # get a specific account based on the id
-@router.get("/get_account/{id}")
-def get_account(id: str):
-    account = account_pass_prot_list_serial(collection.find({"_id": ObjectId(id)}))
+@router.post("/get_account_by_id/")
+async def get_account_by_id(form: GetById):
+    user_id = dict(form).get("id")
+    account = account_pass_prot_list_serial(collection.find({"_id": ObjectId(user_id)}))
 
     return account
 
 # query account based on username
 @router.get("/search_accounts/")
-def search_account(username:str):
-    accounts = account_pass_prot_list_serial(collection.find({"username":{"$regex":username}}))
+async def search_account(username:str):
+    accounts = account_pass_prot_list_serial(collection.find_one({"username":{"$regex":username}}))
     return accounts
 
 # register an account to the database
@@ -102,7 +103,7 @@ async def validate_token(form: ValidateToken):
 
 # add new account to the database
 @router.post("/add_account")
-def add_account(account: Account):
+async def add_account(account: Account):
     account = dict(account)
     hashed_password = bcrypt_handler.generate_hashedpass(account.get("password"))
     account['password'] = hashed_password
@@ -112,7 +113,7 @@ def add_account(account: Account):
 
 # modify an account (for admin maybe idk)
 @router.put("/modify_account/{id}")
-def modify_account(id: str, account: Account):
+async def modify_account(id: str, account: Account):
     collection.find_one_and_update(
         {
             "_id": ObjectId(id)
@@ -126,7 +127,7 @@ def modify_account(id: str, account: Account):
 
 # edit account email
 @router.put("/edit_account_email/{id}")
-def edit_account_email(id: str, email: str):
+async def edit_account_email(id: str, email: str):
     account = collection.find_one({"_id": ObjectId(id)})
     account["email"] = email
     collection.find_one_and_update(
@@ -142,7 +143,7 @@ def edit_account_email(id: str, email: str):
 
 # edit account username
 @router.put("/edit_account_username/{id}")
-def edit_account_username(id: str, username: str):
+async def edit_account_username(id: str, username: str):
     account = collection.find_one({"_id": ObjectId(id)})
     account["username"] = username
     collection.find_one_and_update(
@@ -158,7 +159,7 @@ def edit_account_username(id: str, username: str):
 
 # edit account password
 @router.put("/edit_account_password/{id}")
-def edit_account_password(id: str, password: str):
+async def edit_account_password(id: str, password: str):
     account = collection.find_one({"_id": ObjectId(id)})
     account["password"] = password
     collection.find_one_and_update(
@@ -174,5 +175,5 @@ def edit_account_password(id: str, password: str):
 
 # delete an account (can be both for admin and user if they want to delete their account)
 @router.delete("/delete_account/{id}")
-def delete_account(id: str):
+async def delete_account(id: str):
     collection.find_one_and_delete({"_id": ObjectId(id)})
