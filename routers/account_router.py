@@ -5,7 +5,7 @@ from models.model_schemas import PassCheck, ValidateToken, NewAccountGoogle, New
 from functions.bcrypt_handler import bcrypt_handler_class
 from functions.jwt_authorization import AuthHandler
 from bson import ObjectId
-from config.connection import db
+from config.mongodbConnection import db
 
 router = APIRouter()
 collection = db["account"]
