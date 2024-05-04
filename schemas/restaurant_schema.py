@@ -6,7 +6,6 @@ def individual_serial(restaurant) -> dict:
         "name": (restaurant["name"]),
         "pictureURL": (restaurant["pictureURL"]),
         "categories":(restaurant["categories"]),
-        "menus":(restaurant["menus"]),
         "longitude":(restaurant["longitude"]),
         "latitude":(restaurant["latitude"]),
         "rating":(restaurant["rating"]),
