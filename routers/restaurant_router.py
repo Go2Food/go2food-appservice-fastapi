@@ -7,6 +7,7 @@ from firebase_admin import storage
 from config.mongodbConnection import db
 # ignore the unused warning. somehow it will not work if this is not imported even though it is not used directly in the code
 from config.firebaseConnection import firebase_storage_app
+from routers.menu_router import delete_restaurant_menu
 
 router = APIRouter()
 collection = db["restaurant"]
@@ -14,8 +15,8 @@ collection = db["restaurant"]
 # get all the accounts as a list
 @router.get("/get_all_restaurants")
 async def get_all_restaurants():
-    accounts = restaurant_list_serial(collection.find())
-    return accounts
+    restaurants = restaurant_list_serial(collection.find())
+    return restaurants
 
 # add a restaurant to the database
 @router.post("/add_restaurant/")
@@ -43,7 +44,6 @@ async def add_restaurant(file: UploadFile = File(...), restaurant_name: str = "r
                             pictureURL=url,
                             picture_name=path,
                             categories=new_list,
-                            menus=[],
                             longitude=longitude,
                             latitude=latitude,
                             rating=0,
@@ -61,13 +61,15 @@ async def add_restaurant(file: UploadFile = File(...), restaurant_name: str = "r
 
 @router.delete("/delete_restaurant/{id}")
 async def delete_restaurant(id: str):
-    restaurant = collection.find_one({"_id": ObjectId(id)})
-    image_name = restaurant["picture_name"]
-    try:
-        bucket = storage.bucket()
-        bucket = bucket.blob(image_name)
-        bucket.delete()
-        collection.find_one_and_delete({"_id": ObjectId(id)})
-        return {"detail": "restaurant deleted"}
-    except Exception as e:
-        return {"detail": "restaurant deletion failed"}
+    res = await delete_restaurant_menu(id)
+    if res.get("detail") == "menus deleted":
+        restaurant = collection.find_one({"_id": ObjectId(id)})
+        image_name = restaurant["picture_name"]
+        try:
+            bucket = storage.bucket()
+            bucket = bucket.blob(image_name)
+            bucket.delete()
+            collection.find_one_and_delete({"_id": ObjectId(id)})
+            return {"detail": "restaurant deleted"}
+        except Exception as e:
+            return {"detail": "restaurant deletion failed"}

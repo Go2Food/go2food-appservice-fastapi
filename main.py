@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import account_router, restaurant_router
+from routers import account_router, restaurant_router, menu_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -22,3 +22,4 @@ def home():
 # include all the routes from routers folder
 app.include_router(account_router.router)
 app.include_router(restaurant_router.router)
+app.include_router(menu_router.router)
