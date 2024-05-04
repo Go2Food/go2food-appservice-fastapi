@@ -18,3 +18,7 @@ class ValidateToken(BaseModel):
 
 class GetById(BaseModel):
     id: str
+
+class LocationForm(BaseModel):
+    latitude: float
+    longitude: float

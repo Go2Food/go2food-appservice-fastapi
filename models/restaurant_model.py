@@ -5,6 +5,6 @@ class Restaurant(BaseModel):
     pictureURL: str
     picture_name: str
     categories: list[str]
-    longitude: float
     latitude: float
+    longitude: float
     rating: float

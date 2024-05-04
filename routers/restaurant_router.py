@@ -1,26 +1,39 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from schemas.restaurant_schema import restaurant_list_serial, restaurant_id_list_serial
 from models.restaurant_model import Restaurant
-from models.model_schemas import GetById
+from models.model_schemas import GetById, LocationForm
 from bson import ObjectId
 from firebase_admin import storage
 from config.mongodbConnection import db
+from routers.menu_router import delete_restaurant_menu
+import geopy.distance
+from math import ceil
 # ignore the unused warning. somehow it will not work if this is not imported even though it is not used directly in the code
 from config.firebaseConnection import firebase_storage_app
-from routers.menu_router import delete_restaurant_menu
 
 router = APIRouter()
 collection = db["restaurant"]
 
 # get all the accounts as a list
-@router.get("/get_all_restaurants")
+@router.get("/get_all_restaurants/")
 async def get_all_restaurants():
     restaurants = restaurant_list_serial(collection.find())
     return restaurants
 
+# get all the accounts as a list
+@router.post("/get_recommended_restaurants/")
+async def get_recommended_restaurants(form: LocationForm):
+    form = dict(form)
+    restaurants = restaurant_list_serial(collection.find())
+    for restaurant in restaurants:
+        distance = geopy.distance.geodesic((form.get('latitude'), form.get("longitude")), (restaurant['latitude'], restaurant['longitude'])).km
+        distance = ceil(distance*100)/100
+        restaurant['distance'] = distance
+    return restaurants
+
 # add a restaurant to the database
 @router.post("/add_restaurant/")
-async def add_restaurant(file: UploadFile = File(...), restaurant_name: str = "restaurant_name", categories: list[str] = [], longitude: float = 0, latitude: float = 0):
+async def add_restaurant(file: UploadFile = File(...), restaurant_name: str = "restaurant_name", categories: list[str] = [], latitude: float = 0, longitude: float = 0):
     if not file.filename.endswith(('.jpg', 'jpeg', 'png')):
         raise HTTPException(status_code=400, detail="Only .jpg .jpeg and .png files are supported")
 
@@ -44,8 +57,8 @@ async def add_restaurant(file: UploadFile = File(...), restaurant_name: str = "r
                             pictureURL=url,
                             picture_name=path,
                             categories=new_list,
-                            longitude=longitude,
                             latitude=latitude,
+                            longitude=longitude,
                             rating=0,
                             )
     
