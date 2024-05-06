@@ -30,7 +30,7 @@ async def get_account_by_id(form: GetById):
 # query account based on username
 @router.get("/search_accounts/")
 async def search_account(username:str):
-    accounts = account_pass_prot_list_serial(collection.find_one({"username":{"$regex":username}}))
+    accounts = account_pass_prot_list_serial(collection.find({"username":{"$regex":username}}))
     return accounts
 
 # register an account to the database
