@@ -22,3 +22,8 @@ class GetById(BaseModel):
 class LocationForm(BaseModel):
     latitude: float
     longitude: float
+
+class IdLocationForm(BaseModel):
+    id: str
+    latitude: float
+    longitude: float

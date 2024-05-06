@@ -1,7 +1,7 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from schemas.restaurant_schema import restaurant_list_serial, restaurant_id_list_serial
 from models.restaurant_model import Restaurant
-from models.model_schemas import GetById, LocationForm
+from models.model_schemas import GetById, LocationForm, IdLocationForm
 from bson import ObjectId
 from firebase_admin import storage
 from config.mongodbConnection import db
@@ -14,13 +14,27 @@ from config.firebaseConnection import firebase_storage_app
 router = APIRouter()
 collection = db["restaurant"]
 
-# get all the accounts as a list
+# get all the restaurants
 @router.get("/get_all_restaurants/")
 async def get_all_restaurants():
     restaurants = restaurant_list_serial(collection.find())
     return restaurants
 
-# get all the accounts as a list
+@router.post("/get_restaurant_byId/")
+async def get_restaurant_byId(form: IdLocationForm):
+    form = dict(form)
+    restaurant_id = form.get("id")
+    latitude = form.get("latitude")
+    longitude = form.get("longitude")
+    restaurant = collection.find_one({"_id": ObjectId(restaurant_id)})
+    restaurant["_id"] = str(restaurant["_id"])
+    distance = geopy.distance.geodesic((latitude, longitude), (restaurant['latitude'], restaurant['longitude'])).km
+    distance = ceil(distance*100)/100
+    restaurant['distance'] = distance
+    
+    return restaurant
+    
+# get restaurants to be shown in the recommended list on the dashboard page of the frontend app of gofood2
 @router.post("/get_recommended_restaurants/")
 async def get_recommended_restaurants(form: LocationForm):
     form = dict(form)
