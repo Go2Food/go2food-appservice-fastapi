@@ -3,6 +3,7 @@
 def individual_serial(menu) -> dict:
     return {
         "_id": str(menu["_id"]),
+        "restaurant": (menu["restaurant"]),
         "name": (menu["name"]),
         "pictureURL": (menu["pictureURL"]),
         "description":(menu["description"]),

@@ -25,6 +25,18 @@ class AuthHandler():
         token = jwt.encode(payload, self.secret, algorithm=self.algorithm)
         return token
     
+    def get_token_restaurant(self, email, user_id, restaurant_id):
+        payload = {
+            # ignore the fucking deprecated info. Using the not deprecated code on this python function said the method doesnt exist i love python guys why the fuck do i love python so much what the fuck
+            "user_id": user_id,
+            "email": email,
+            "restaurant_id": restaurant_id,
+            "exp": datetime.datetime.utcnow() + self.validity,
+            "iat": datetime.datetime.utcnow()
+        }
+        token = jwt.encode(payload, self.secret, algorithm=self.algorithm)
+        return token
+    
     def decode_token(self, token):
         try:
             payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
