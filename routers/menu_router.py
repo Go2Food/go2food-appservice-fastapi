@@ -1,6 +1,7 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, UploadFile, HTTPException, Form
 from schemas.menu_schema import menu_list_serial
 from models.menu_model import Menu
+from typing import Annotated
 from models.model_schemas import GetById
 from bson import ObjectId
 from firebase_admin import storage
@@ -24,7 +25,14 @@ async def get_menu_restaurant(form: GetById):
     return menus
 
 @router.post("/add_menu/")
-async def add_menu(file: UploadFile = File(...), restaurant_id: str = "id", name: str = "name", description: str = "description", category: str = "category", price: float = 0):
+async def add_menu(
+    restaurant_id: Annotated[str, Form()],
+    file: Annotated[UploadFile, File()],
+    name: Annotated[str, Form()],
+    description: Annotated[str, Form()],
+    category: Annotated[str, Form()],
+    price: Annotated[float, Form()],
+):
     if not file.filename.endswith(('.jpg', 'jpeg', 'png')):
         raise HTTPException(status_code=400, detail="Only .jpg .jpeg and .png files are supported")
 
@@ -59,8 +67,10 @@ async def add_menu(file: UploadFile = File(...), restaurant_id: str = "id", name
         bucket.delete()
         return {"detail": "menu addition failed somehow"}
     
-@router.delete("/delete_menu/{id}")
-async def delete_menu(id: str):
+@router.delete("/delete_menu/")
+async def delete_menu(form: GetById):
+    form = dict(form)
+    id = form.get("id")
     menu = collection.find_one({"_id": ObjectId(id)})
     image_name = menu["picture_name"]
     try:
@@ -72,8 +82,10 @@ async def delete_menu(id: str):
     except Exception as e:
         return {"detail": "menu deletion failed"}
     
-@router.delete("/delete_restaurant_menus/{id}")
-async def delete_restaurant_menu(id: str):
+@router.delete("/delete_restaurant_menus/")
+async def delete_restaurant_menu(form: GetById):
+    form = dict(form)
+    id = form.get("id")
     menus = collection.find({"restaurant": id})
     for menu in menus:
         try:

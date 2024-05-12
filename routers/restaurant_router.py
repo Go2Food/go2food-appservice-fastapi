@@ -33,6 +33,15 @@ async def get_restaurant_byId(form: IdLocationForm):
     restaurant['distance'] = distance
     
     return restaurant
+
+@router.post("/get_restaurant_byId_restaurant_account/")
+async def get_restaurant_byId_restaurant_account(form: GetById):
+    form = dict(form)
+    restaurant_id = form.get("id")
+    restaurant = collection.find_one({"_id": ObjectId(restaurant_id)})
+    restaurant["_id"] = str(restaurant["_id"])
+    
+    return restaurant
     
 # get restaurants to be shown in the recommended list on the dashboard page of the frontend app of gofood2
 @router.post("/get_recommended_restaurants/")
