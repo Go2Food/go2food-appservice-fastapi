@@ -83,9 +83,7 @@ async def delete_menu(form: GetById):
         return {"detail": "menu deletion failed"}
     
 @router.delete("/delete_restaurant_menus/")
-async def delete_restaurant_menu(form: GetById):
-    form = dict(form)
-    id = form.get("id")
+async def delete_restaurant_menu(id:str):
     menus = collection.find({"restaurant": id})
     for menu in menus:
         try:
