@@ -1,6 +1,10 @@
 # serialize the collection from json file so its readable by python in a list form
 
 def individual_serial(restaurant) -> dict:
+    rating_len = len(restaurant["rating"])
+    rating = 0
+    if rating_len > 0:
+        rating = sum(restaurant["rating"])/len(restaurant["rating"])
     return {
         "_id": str(restaurant["_id"]),
         "name": (restaurant["name"]),
@@ -8,7 +12,7 @@ def individual_serial(restaurant) -> dict:
         "categories":(restaurant["categories"]),
         "longitude":(restaurant["longitude"]),
         "latitude":(restaurant["latitude"]),
-        "rating":(restaurant["rating"]),
+        "rating": rating,
     }
 
 def restaurant_id(restaurant) -> dict:

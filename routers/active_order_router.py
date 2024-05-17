@@ -1,6 +1,7 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException, Form
 from schemas.active_order_schema import active_order_list_serial
 from models.active_order_model import ActiveOrder, NewOrder, Item
+from routers.completed_order_router import add_completed_order
 from typing import Annotated, List
 from models.model_schemas import GetById, IdLocationForm
 from datetime import datetime
@@ -15,6 +16,7 @@ from config.firebaseConnection import firebase_storage_app
 router = APIRouter()
 collection = db["active_orders"]
 restaurant_collection = db["restaurant"]
+user_collection = db["account"]
 
 # get all the accounts as a list
 @router.get("/get_active_orders")
@@ -64,36 +66,75 @@ async def accept_pending_order(form: GetById):
     form = dict(form)
     id = form.get("id")
     new_data = collection.find_one({"_id": ObjectId(id)})
-    new_data["status"] = "accepted"
 
-    res = collection.find_one_and_update(
-    {
-        "_id": ObjectId(id)
-    },
-    {
-        "$set": dict(new_data)
-    })
+    if new_data is not None:
+        new_data["status"] = "accepted"
+        res = collection.find_one_and_update(
+        {
+            "_id": ObjectId(id)
+        },
+        {
+            "$set": dict(new_data)
+        })
 
-    res["_id"] = str(res["_id"])
-    return res
+        res["_id"] = str(res["_id"])
+        return res
+
+    return {"detail": "order is not found on the server"}
 
 @router.put("/reject_pending_order")
 async def reject_pending_order(form: GetById):
     form = dict(form)
     id = form.get("id")
+
+    order_data = collection.find_one({"_id": ObjectId(id)})
+    user_id = order_data["user_id"]
+
     new_data = collection.find_one({"_id": ObjectId(id)})
-    new_data["status"] = "rejected"
 
-    res = collection.find_one_and_update(
-    {
-        "_id": ObjectId(id)
-    },
-    {
-        "$set": dict(new_data)
-    })
+    if new_data is not None:
+        new_data["status"] = "rejected"
+        # return the balance to the customer who orders
+        customer_balance = (user_collection.find_one({"_id": ObjectId(user_id)}))["balance"]
+        new_balance = customer_balance + order_data["total_price"]
+        user_collection.find_one_and_update (
+            {"_id": ObjectId(user_id)},
+            {"$set": {"balance": new_balance}}
+        )
 
-    res["_id"] = str(res["_id"])
-    return res
+        res = collection.find_one_and_update(
+        {
+            "_id": ObjectId(id)
+        },
+        {
+            "$set": dict(new_data)
+        })
+
+        res["_id"] = str(res["_id"])
+        return res
+
+    return {"detail": "order is not found on the server"}
+
+@router.put("/deliver_pending_order")
+async def deliver_pending_order(form: GetById):
+    form = dict(form)
+    id = form.get("id")
+    new_data = collection.find_one({"_id": ObjectId(id)})
+
+    if new_data is not None:
+        new_data["status"] = "delivered"
+        res = collection.find_one_and_update(
+        {
+            "_id": ObjectId(id)
+        },
+        {
+            "$set": dict(new_data)
+        })
+
+        res["_id"] = str(res["_id"])
+        return res
+
+    return {"detail": "order is not found on the server"}
 
 @router.post("/add_active_order/")
 async def add_active_order(
@@ -109,6 +150,16 @@ async def add_active_order(
     check = collection.find_one({"user_id": user_id})
 
     if check is None:
+        customer_balance = (user_collection.find_one({"_id": ObjectId(user_id)}))["balance"]
+        if customer_balance < total_price:
+            return {"detail": "balance is insufficient"}
+        else:
+            # update the user balance by deducting the balance by the total price of the order
+            new_balance = customer_balance - total_price
+            user_collection.find_one_and_update(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"balance": new_balance}}
+            )
         order = list(form.get("order"))
         list_order = []
         for i in order:
@@ -131,6 +182,23 @@ async def add_active_order(
         return {"detail": "active order added succesfully"}
     else:
         return {"detail": "there is an active order already"}
+    
+@router.post("/complete_active_order")
+async def complete_active_order(form: GetById):
+    form = dict(form)
+    id = form.get('id')
+
+    active_order_data = collection.find_one({"_id": ObjectId(id)}, {"created": False})
+    active_order_data["status"] = "unrated"
+    active_order_data["completed"] = datetime.now()
+
+    if active_order_data is not None:
+        await add_completed_order(active_order_data)
+        collection.find_one_and_delete({"_id": ObjectId(id)})
+        new_collection = active_order_list_serial(collection.find())
+        return new_collection
+    
+    return {"detail": "no order data is found in the server"}
 
 @router.delete("/delete_active_order/{id}")
 async def delete_active_order(id: str):

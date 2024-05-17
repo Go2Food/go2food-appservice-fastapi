@@ -46,6 +46,8 @@ async def register(account: NewAccount):
     try:
         hashed_password = bcrypt_handler.generate_hashedpass(account.get("password"))
         account['password'] = hashed_password
+        account["premium"] = False
+        account["balance"] = 0.0
         collection.insert_one(account)
         return {"detail": "registration success"}
     except:
@@ -85,6 +87,8 @@ async def SigninWithGoogle(form: NewAccountGoogle):
     # if not in database add it to the database
     else:
         try:
+            form["premium"] = False
+            form["balance"] = 0.0
             collection.insert_one(form)
         except:
             return {"detail": "sign in failed"}
@@ -99,17 +103,41 @@ async def validate_token(form: ValidateToken):
 
     if (details):
         return {"detail": details}
+    
+# get the balance detail of a specific account
+@router.post("/get_account_balance_by_id/")
+async def get_account_balance_by_id(form: GetById):
+    user_id = dict(form).get("id")
+    account = collection.find_one({"_id": ObjectId(user_id)})
 
+    return {"detail": account["balance"]}
 
-# add new account to the database
-@router.post("/add_account")
-async def add_account(account: Account):
-    account = dict(account)
-    hashed_password = bcrypt_handler.generate_hashedpass(account.get("password"))
-    account['password'] = hashed_password
-    collection.insert_one(account)
+# update the user account premium status
+@router.post("/update_user_to_premium/")
+async def update_user_to_premium(form: GetById):
+    user_id = dict(form).get("id")
+    customer_balance = (collection.find_one({"_id": ObjectId(user_id)}))["balance"]
+    new_balance = customer_balance - 9.99
+    if new_balance >= 0:
+        collection.find_one_and_update(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"premium": True, "balance": new_balance}}
+        )
 
-    return {"message": "Account has been added succesfully"}
+        return {"detail": "the user is now a premium user"}
+
+    return {"detail": "insufficient balance"}
+
+# downgrade the user account premium status
+@router.post("/downgrade_user_from_premium/")
+async def downgrade_user_from_premium(form: GetById):
+    user_id = dict(form).get("id")
+    collection.find_one_and_update(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"premium": False}}
+    )
+
+    return {"detail": "the user premium status is downgraded"}
 
 # modify an account (for admin maybe idk)
 @router.put("/modify_account/{id}")
@@ -125,53 +153,14 @@ async def modify_account(id: str, account: Account):
 
     return {"message": "Account has been edited succesfully"}
 
-# edit account email
-@router.put("/edit_account_email/{id}")
-async def edit_account_email(id: str, email: str):
-    account = collection.find_one({"_id": ObjectId(id)})
-    account["email"] = email
-    collection.find_one_and_update(
-        {
-            "_id": ObjectId(id)
-        },
-        {   
-            "$set": dict(account)
-        }
-    )
-
-    return {"message": "account email has been changed"}
-
-# edit account username
-@router.put("/edit_account_username/{id}")
-async def edit_account_username(id: str, username: str):
-    account = collection.find_one({"_id": ObjectId(id)})
-    account["username"] = username
-    collection.find_one_and_update(
-        {
-            "_id": ObjectId(id)
-        },
-        {   
-            "$set": dict(account)
-        }
-    )
-
-    return {"message": "account username has been changed"}
-
-# edit account password
-@router.put("/edit_account_password/{id}")
-async def edit_account_password(id: str, password: str):
-    account = collection.find_one({"_id": ObjectId(id)})
-    account["password"] = password
-    collection.find_one_and_update(
-        {
-            "_id": ObjectId(id)
-        },
-        {   
-            "$set": dict(account)
-        }
-    )
-
-    return {"message": "account password has been changed"}
+# temporary function will probably delete later (if i remember to delete this anyway)
+@router.post("/update_accounts")
+async def update_accounts():
+    update_result = collection.update_many({}, {"$set": {"premium": False, "balance": 0.0}})
+    if update_result.matched_count > 0:
+        return {"message": f"{update_result.matched_count} accounts updated successfully."}
+    else:
+        return {"message": "No accounts found to update."}
 
 # delete an account (can be both for admin and user if they want to delete their account)
 @router.delete("/delete_account/{id}")

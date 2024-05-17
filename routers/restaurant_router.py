@@ -13,6 +13,7 @@ from config.firebaseConnection import firebase_storage_app
 
 router = APIRouter()
 collection = db["restaurant"]
+completed_order_collection = db["completed_orders"]
 
 # get all the restaurants
 @router.get("/get_all_restaurants/")
@@ -20,6 +21,7 @@ async def get_all_restaurants():
     restaurants = restaurant_list_serial(collection.find())
     return restaurants
 
+# this is for customer frontend
 @router.post("/get_restaurant_byId/")
 async def get_restaurant_byId(form: IdLocationForm):
     form = dict(form)
@@ -31,15 +33,18 @@ async def get_restaurant_byId(form: IdLocationForm):
     distance = geopy.distance.geodesic((latitude, longitude), (restaurant['latitude'], restaurant['longitude'])).km
     distance = ceil(distance*100)/100
     restaurant['distance'] = distance
+    restaurant["rating"] = (sum(restaurant["rating"]/len(restaurant["rating"]))) if len(restaurant["rating"]) > 0 else 0
     
     return restaurant
 
+# this is for restaurant frontend (to be shown in their dashboard so they can edit their restaurant menus or information if it'll ever get to that)
 @router.post("/get_restaurant_byId_restaurant_account/")
 async def get_restaurant_byId_restaurant_account(form: GetById):
     form = dict(form)
     restaurant_id = form.get("id")
     restaurant = collection.find_one({"_id": ObjectId(restaurant_id)})
     restaurant["_id"] = str(restaurant["_id"])
+    restaurant["rating"] = (sum(restaurant["rating"]/len(restaurant["rating"]))) if len(restaurant["rating"]) > 0 else 0
     
     return restaurant
     
@@ -53,6 +58,30 @@ async def get_recommended_restaurants(form: LocationForm):
         distance = ceil(distance*100)/100
         restaurant['distance'] = distance
     return restaurants
+
+@router.post("/get_recent_restaurants/")
+async def get_recent_restaurants(form: IdLocationForm):
+    form = dict(form)
+    user_id = form.get("id")
+    recent_orders_datas = completed_order_collection.find({"user_id": user_id})
+    restaurant_ids = []
+    if recent_orders_datas is not None:
+        for recent_orders_data in recent_orders_datas:
+            recent_orders_data = dict(recent_orders_data)
+            restaurant_ids.append(ObjectId(recent_orders_data["restaurant_id"]))
+        
+        restaurants = []
+        for restaurant_id in restaurant_ids:
+            restaurant = collection.find_one({"_id": restaurant_id})
+            restaurant["_id"] = str(restaurant["_id"])
+            distance = geopy.distance.geodesic((form.get('latitude'), form.get("longitude")), (restaurant['latitude'], restaurant['longitude'])).km
+            distance = ceil(distance*100)/100
+            restaurant['distance'] = distance
+            restaurant["rating"] = (sum(restaurant["rating"]/len(restaurant["rating"]))) if len(restaurant["rating"]) > 0 else 0
+            restaurants.append(restaurant)
+
+        return restaurants
+    return []
 
 # add a restaurant to the database
 @router.post("/add_restaurant/")
@@ -82,7 +111,7 @@ async def add_restaurant(file: UploadFile = File(...), restaurant_name: str = "r
                             categories=new_list,
                             latitude=latitude,
                             longitude=longitude,
-                            rating=0,
+                            rating=[],
                             )
     
     try:
@@ -94,6 +123,14 @@ async def add_restaurant(file: UploadFile = File(...), restaurant_name: str = "r
         bucket.delete()
         return {"detail": "restaurant addition failed somehow"}
 
+# this is for refactoring the restaurant database (will probably delete later if i ever remember to delete this later)
+@router.post("/update_restaurants")
+async def update_restaurants():
+    update_result = collection.update_many({}, {"$set": {"rating": []}})
+    if update_result.matched_count > 0:
+        return {"message": f"{update_result.matched_count} restaurants updated successfully."}
+    else:
+        return {"message": "No restaurants found to update."}
 
 @router.delete("/delete_restaurant/{id}")
 async def delete_restaurant(id: str):
