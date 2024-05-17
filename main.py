@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import account_router, active_order_router, restaurant_router, menu_router, restaurant_account_router
+from routers import account_router, active_order_router, restaurant_router, menu_router, restaurant_account_router, completed_order_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -25,3 +25,4 @@ app.include_router(restaurant_router.router)
 app.include_router(menu_router.router)
 app.include_router(restaurant_account_router.router)
 app.include_router(active_order_router.router)
+app.include_router(completed_order_router.router)
