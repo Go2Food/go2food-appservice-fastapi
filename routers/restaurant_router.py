@@ -1,11 +1,12 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from schemas.restaurant_schema import restaurant_list_serial, restaurant_id_list_serial
 from models.restaurant_model import Restaurant
-from models.model_schemas import GetById, LocationForm, IdLocationForm
+from models.model_schemas import GetById, LocationForm, IdLocationForm, RestaurantQuery
 from bson import ObjectId
 from firebase_admin import storage
 from config.mongodbConnection import db
 from routers.menu_router import delete_restaurant_menu
+from pymongo import ASCENDING, DESCENDING
 import geopy.distance
 from math import ceil
 # ignore the unused warning. somehow it will not work if this is not imported even though it is not used directly in the code
@@ -58,6 +59,42 @@ async def get_recommended_restaurants(form: LocationForm):
         distance = ceil(distance*100)/100
         restaurant['distance'] = distance
     return restaurants
+
+@router.post("/get_restaurants_based_on_query")
+async def get_restaurants_based_on_query(form: RestaurantQuery):
+    form = dict(form)
+    name = form.get("search_name")
+    tags = form.get("tags")
+    currentpage = form.get("currentpage")
+    itemperpage = form.get("itemperpage")
+    start = (currentpage - 1) * itemperpage
+    end = start + itemperpage
+    print(name)
+    print(tags)
+    if tags != []:
+        restaurants = restaurant_list_serial(collection.find({"name":{"$regex":name, "$options": "i"}, "categories": {"$in": tags}}))
+    else:
+        restaurants = restaurant_list_serial(collection.find({"name":{"$regex":name, "$options": "i"}}))
+
+    for restaurant in restaurants:
+        distance = geopy.distance.geodesic((form.get('latitude'), form.get("longitude")), (restaurant['latitude'], restaurant['longitude'])).km
+        distance = ceil(distance*100)/100
+        restaurant['distance'] = distance
+    
+    final_res = sorted(restaurants, key=lambda item: (-item['rating'], item['distance']))
+    max_page = -(len(final_res) // -itemperpage)
+    return {"max_page": max_page, "datas": final_res[start:end]}
+
+# get restaurants to be shown in the recommended list on the dashboard page of the frontend app of gofood2
+@router.post("/get_recommended_restaurants_sorted/")
+async def get_recommended_restaurants_sorted(form: LocationForm):
+    form = dict(form)
+    restaurants = restaurant_list_serial(collection.find())
+    for restaurant in restaurants:
+        distance = geopy.distance.geodesic((form.get('latitude'), form.get("longitude")), (restaurant['latitude'], restaurant['longitude'])).km
+        distance = ceil(distance*100)/100
+        restaurant['distance'] = distance
+    return sorted(restaurants, key=lambda item: (-item['rating'], item['distance']))
 
 @router.post("/get_recent_restaurants/")
 async def get_recent_restaurants(form: IdLocationForm):

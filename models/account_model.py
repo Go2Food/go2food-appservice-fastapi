@@ -6,3 +6,4 @@ class Account(BaseModel):
     password: str
     premium: bool
     balance: float
+    location: str
