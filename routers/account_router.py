@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from schemas.account_schema import account_id_list_serial, account_pass_prot_list_serial
 from models.account_model import Account
-from models.model_schemas import PassCheck, ValidateToken, NewAccountGoogle, NewAccount, GetById
+from models.model_schemas import PassCheck, UserLocation, ValidateToken, NewAccountGoogle, NewAccount, GetById
 from functions.bcrypt_handler import bcrypt_handler_class
 from functions.jwt_authorization import AuthHandler
 from bson import ObjectId
@@ -48,13 +48,12 @@ async def register(account: NewAccount):
         account['password'] = hashed_password
         account["premium"] = False
         account["balance"] = 0.0
+        account["location"] = ""
         collection.insert_one(account)
         return {"detail": "registration success"}
     except:
         return {"detail": "registration failed"}
     
-
-
 # login a user account
 @router.post("/login/")
 async def login(form: PassCheck):
@@ -89,13 +88,15 @@ async def SigninWithGoogle(form: NewAccountGoogle):
         try:
             form["premium"] = False
             form["balance"] = 0.0
+            form["location"] = ""
             collection.insert_one(form)
         except:
             return {"detail": "sign in failed"}
         id = account_id_list_serial(collection.find({"email":form.get("email")}))[0].get("_id")
         token = jwt_handler.get_token(form.get('email'), id)
         return {"detail": token}
-    
+
+# validate token
 @router.post("/validate_token/")
 async def validate_token(form: ValidateToken):
     form = dict(form)
@@ -111,6 +112,17 @@ async def get_account_balance_by_id(form: GetById):
     account = collection.find_one({"_id": ObjectId(user_id)})
 
     return {"detail": account["balance"]}
+
+# get the balance detail of a specific account
+@router.post("/update_user_location/")
+async def update_user_location(form: UserLocation):
+    user_id = dict(form).get("id")
+    location = dict(form).get("location")
+    collection.find_one_and_update(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"location": location}}
+        )
+    return {"detail": "succesfully set the user's location"}
 
 # update the user account premium status
 @router.post("/update_user_to_premium/")
@@ -156,7 +168,7 @@ async def modify_account(id: str, account: Account):
 # temporary function will probably delete later (if i remember to delete this anyway)
 @router.post("/update_accounts")
 async def update_accounts():
-    update_result = collection.update_many({}, {"$set": {"premium": False, "balance": 0.0}})
+    update_result = collection.update_many({}, {"$set": {"location": ""}})
     if update_result.matched_count > 0:
         return {"message": f"{update_result.matched_count} accounts updated successfully."}
     else:

@@ -31,3 +31,15 @@ class IdLocationForm(BaseModel):
     id: str
     latitude: float
     longitude: float
+
+class RestaurantQuery(BaseModel):
+    latitude: float
+    longitude: float
+    search_name: str
+    tags: list[str]
+    itemperpage: int
+    currentpage: int
+
+class UserLocation(BaseModel):
+    id: str
+    location: str
