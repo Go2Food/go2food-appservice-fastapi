@@ -4,6 +4,7 @@ def individual_serial(completed_order) -> dict:
         "user_id": (completed_order["user_id"]),
         "username": (completed_order["username"]),
         "restaurant_id": (completed_order["restaurant_id"]),
+        "restaurant_name": (completed_order["restaurant_name"]),
         "total_price": (completed_order["total_price"]),
         "latitude": (completed_order["latitude"]),
         "longitude": (completed_order["longitude"]),

@@ -189,8 +189,10 @@ async def complete_active_order(form: GetById):
     id = form.get('id')
 
     active_order_data = collection.find_one({"_id": ObjectId(id)}, {"created": False})
+    restaurant_data = restaurant_collection.find_one({"_id": ObjectId(active_order_data["restaurant_id"])})
     active_order_data["status"] = "unrated"
     active_order_data["completed"] = datetime.now()
+    active_order_data["restaurant_name"] = restaurant_data["name"]
 
     if active_order_data is not None:
         await add_completed_order(active_order_data)

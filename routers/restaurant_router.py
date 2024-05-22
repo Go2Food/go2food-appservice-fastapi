@@ -1,7 +1,7 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from schemas.restaurant_schema import restaurant_list_serial, restaurant_id_list_serial
 from models.restaurant_model import Restaurant
-from models.model_schemas import GetById, LocationForm, IdLocationForm, RestaurantQuery
+from models.model_schemas import GetById, LocationForm, IdLocationForm, RestaurantQuery, RestaurantRating
 from bson import ObjectId
 from firebase_admin import storage
 from config.mongodbConnection import db
@@ -34,7 +34,9 @@ async def get_restaurant_byId(form: IdLocationForm):
     distance = geopy.distance.geodesic((latitude, longitude), (restaurant['latitude'], restaurant['longitude'])).km
     distance = ceil(distance*100)/100
     restaurant['distance'] = distance
-    restaurant["rating"] = (sum(restaurant["rating"]/len(restaurant["rating"]))) if len(restaurant["rating"]) > 0 else 0
+    rating = (sum(restaurant["rating"])/len(restaurant["rating"])) if len(restaurant["rating"]) > 0 else 0
+    rating = ceil(rating*100)/100
+    restaurant["rating"] = rating
     
     return restaurant
 
@@ -60,6 +62,28 @@ async def get_recommended_restaurants(form: LocationForm):
         restaurant['distance'] = distance
     return restaurants
 
+@router.put("/update_restaurant_rating")
+async def update_restaurant_rating(form: RestaurantRating):
+    form = dict(form)
+    id = form.get("id")
+    order_id = form.get("order_id")
+    rating = form.get("rating")
+    current_restaurant_data = collection.find_one({"_id": ObjectId(id)})
+    curr_rating = current_restaurant_data["rating"]
+    curr_rating.append(rating)
+    collection.find_one_and_update(
+        {
+            "_id": ObjectId(id)
+        }, 
+        {
+            "$set": {"rating": curr_rating}
+        })
+    completed_order_collection.find_one_and_update(
+        {"_id": ObjectId(order_id)},
+        {"$set": {"status": "rated"}}
+    )
+    return {"detail": "data updated"}
+
 @router.post("/get_restaurants_based_on_query")
 async def get_restaurants_based_on_query(form: RestaurantQuery):
     form = dict(form)
@@ -69,8 +93,6 @@ async def get_restaurants_based_on_query(form: RestaurantQuery):
     itemperpage = form.get("itemperpage")
     start = (currentpage - 1) * itemperpage
     end = start + itemperpage
-    print(name)
-    print(tags)
     if tags != []:
         restaurants = restaurant_list_serial(collection.find({"name":{"$regex":name, "$options": "i"}, "categories": {"$in": tags}}))
     else:
@@ -114,7 +136,9 @@ async def get_recent_restaurants(form: IdLocationForm):
             distance = geopy.distance.geodesic((form.get('latitude'), form.get("longitude")), (restaurant['latitude'], restaurant['longitude'])).km
             distance = ceil(distance*100)/100
             restaurant['distance'] = distance
-            restaurant["rating"] = (sum(restaurant["rating"]/len(restaurant["rating"]))) if len(restaurant["rating"]) > 0 else 0
+            rating = (sum(restaurant["rating"])/len(restaurant["rating"])) if len(restaurant["rating"]) > 0 else 0
+            rating = ceil(rating*100)/100
+            restaurant["rating"] = rating
             restaurants.append(restaurant)
 
         return restaurants

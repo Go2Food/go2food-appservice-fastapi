@@ -17,7 +17,9 @@ def password_protected(account) -> dict:
         "password": "*********",
         "balance": ceil(account["balance"]*100)/100,
         "premium": (account["premium"]),
-        "location": (account["location"])
+        "location": (account["location"]),
+        "latitude": (account["latitude"]),
+        "longitude": (account["longitude"])
     }
 
 def account_id(account) -> dict:

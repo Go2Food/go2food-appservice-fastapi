@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from schemas.account_schema import account_id_list_serial, account_pass_prot_list_serial
 from models.account_model import Account
-from models.model_schemas import PassCheck, UserLocation, ValidateToken, NewAccountGoogle, NewAccount, GetById
+from models.model_schemas import IdLocationForm, LocationForm, PassCheck, UserLocation, ValidateToken, NewAccountGoogle, NewAccount, GetById
 from functions.bcrypt_handler import bcrypt_handler_class
 from functions.jwt_authorization import AuthHandler
 from bson import ObjectId
@@ -49,6 +49,8 @@ async def register(account: NewAccount):
         account["premium"] = False
         account["balance"] = 0.0
         account["location"] = ""
+        account["latitude"] = 0
+        account["longitude"] = 0
         collection.insert_one(account)
         return {"detail": "registration success"}
     except:
@@ -89,6 +91,8 @@ async def SigninWithGoogle(form: NewAccountGoogle):
             form["premium"] = False
             form["balance"] = 0.0
             form["location"] = ""
+            form["latitude"] = 0
+            form["longitude"] = 0
             collection.insert_one(form)
         except:
             return {"detail": "sign in failed"}
@@ -112,17 +116,6 @@ async def get_account_balance_by_id(form: GetById):
     account = collection.find_one({"_id": ObjectId(user_id)})
 
     return {"detail": account["balance"]}
-
-# get the balance detail of a specific account
-@router.post("/update_user_location/")
-async def update_user_location(form: UserLocation):
-    user_id = dict(form).get("id")
-    location = dict(form).get("location")
-    collection.find_one_and_update(
-            {"_id": ObjectId(user_id)},
-            {"$set": {"location": location}}
-        )
-    return {"detail": "succesfully set the user's location"}
 
 # update the user account premium status
 @router.post("/update_user_to_premium/")
@@ -151,6 +144,30 @@ async def downgrade_user_from_premium(form: GetById):
 
     return {"detail": "the user premium status is downgraded"}
 
+# update the location attribute of the user
+@router.put("/update_user_location/")
+async def update_user_location(form: UserLocation):
+    user_id = dict(form).get("id")
+    location = dict(form).get("location")
+    collection.find_one_and_update(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"location": location}}
+        )
+    return {"detail": "succesfully set the user's location"}
+
+# update the location attribute of the user
+@router.put("/update_user_lat_long/")
+async def update_user_lat_long(form: IdLocationForm):
+    user_id = dict(form).get("id")
+    latitude = dict(form).get("latitude")
+    longitude = dict(form).get("longitude")
+    collection.find_one_and_update(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"latitude": latitude, "longitude": longitude}}
+        )
+    return {"detail": "succesfully set the user's location"}
+
+
 # modify an account (for admin maybe idk)
 @router.put("/modify_account/{id}")
 async def modify_account(id: str, account: Account):
@@ -168,7 +185,7 @@ async def modify_account(id: str, account: Account):
 # temporary function will probably delete later (if i remember to delete this anyway)
 @router.post("/update_accounts")
 async def update_accounts():
-    update_result = collection.update_many({}, {"$set": {"location": ""}})
+    update_result = collection.update_many({}, {"$set": {"latitude": 0, "longitude": 0}})
     if update_result.matched_count > 0:
         return {"message": f"{update_result.matched_count} accounts updated successfully."}
     else:

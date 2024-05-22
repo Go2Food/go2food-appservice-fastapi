@@ -11,6 +11,7 @@ class CompletedOrder(BaseModel):
     user_id: str
     username: str
     restaurant_id: str
+    restaurant_name: str
     total_price: float
     order: list[dict]
     status: str
