@@ -7,3 +7,5 @@ class Account(BaseModel):
     premium: bool
     balance: float
     location: str
+    latitude: float
+    longitude: float
