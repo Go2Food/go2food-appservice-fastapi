@@ -1,10 +1,13 @@
 # serialize the collection from json file so its readable by python in a list form
+from math import ceil
 
 def individual_serial(restaurant) -> dict:
     rating_len = len(restaurant["rating"])
     rating = 0
     if rating_len > 0:
         rating = sum(restaurant["rating"])/len(restaurant["rating"])
+        rating = ceil(rating*100)/100
+    
     return {
         "_id": str(restaurant["_id"]),
         "name": (restaurant["name"]),

@@ -7,4 +7,4 @@ class Restaurant(BaseModel):
     categories: list[str]
     latitude: float
     longitude: float
-    rating: list[float]
+    rating: list[int]

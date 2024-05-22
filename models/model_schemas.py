@@ -40,6 +40,11 @@ class RestaurantQuery(BaseModel):
     itemperpage: int
     currentpage: int
 
+class RestaurantRating(BaseModel):
+    id: str
+    order_id: str
+    rating: int
+
 class UserLocation(BaseModel):
     id: str
     location: str
