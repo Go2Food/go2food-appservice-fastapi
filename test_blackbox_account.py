@@ -125,17 +125,17 @@ def test_downgrade_account_type():
     
 def test_update_location_lat_lng():
     random_lat = [random.randint(-90, 90) for _ in range(2)]
-    random_lat = random_lat[0] / random_lat[1]
+    random_lat = round(random_lat[0] / random_lat[1], 5)
     random_lng = [random.randint(-180, 180) for _ in range(2)]
-    random_lng = random_lng[0] / random_lng[1]
+    random_lng = round(random_lng[0] / random_lng[1], 5)
     
     try:
-        response = client.post(
+        response = client.put(
             "/update_user_location_and_latlong", 
             headers=headers, 
             json={
                 "id": temp_account_details["user_id"],
-                "location": "Some place's name on earth",
+                "location": "Some random place on earth",
                 "latitude": random_lat,
                 "longitude": random_lng,
             }
