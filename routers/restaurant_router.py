@@ -47,7 +47,9 @@ async def get_restaurant_byId_restaurant_account(form: GetById):
     restaurant_id = form.get("id")
     restaurant = collection.find_one({"_id": ObjectId(restaurant_id)})
     restaurant["_id"] = str(restaurant["_id"])
-    restaurant["rating"] = (sum(restaurant["rating"]/len(restaurant["rating"]))) if len(restaurant["rating"]) > 0 else 0
+    rating = (sum(restaurant["rating"])/len(restaurant["rating"])) if len(restaurant["rating"]) > 0 else 0
+    rating = ceil(rating*100)/100
+    restaurant["rating"] = rating
     
     return restaurant
     
