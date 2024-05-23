@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from schemas.account_schema import account_id_list_serial, account_pass_prot_list_serial
 from models.account_model import Account
-from models.model_schemas import IdLocationForm, LocationForm, PassCheck, UserLocation, ValidateToken, NewAccountGoogle, NewAccount, GetById
+from models.model_schemas import IdLocationForm, LocationForm, PassCheck, UserBalanceUpdate, UserLocLatLong, UserLocation, ValidateToken, NewAccountGoogle, NewAccount, GetById
 from functions.bcrypt_handler import bcrypt_handler_class
 from functions.jwt_authorization import AuthHandler
 from bson import ObjectId
@@ -144,16 +144,47 @@ async def downgrade_user_from_premium(form: GetById):
 
     return {"detail": "the user premium status is downgraded"}
 
+# update the value of balance
+@router.put("/update_user_balance/")
+async def update_user_balance(form: UserBalanceUpdate):
+    user_id = dict(form).get("id")
+    balance = dict(form).get("balance")
+    
+    old_data = collection.find_one({"_id": ObjectId(user_id)})
+    new_balance = old_data["balance"] + balance
+
+    collection.find_one_and_update(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"balance": new_balance}}
+    )
+
+    return {"detail": "the balance is updated"}
+
 # update the location attribute of the user
 @router.put("/update_user_location/")
 async def update_user_location(form: UserLocation):
-    user_id = dict(form).get("id")
-    location = dict(form).get("location")
+    form = dict(form)
+    user_id = form.get("id")
+    location = form.get("location")
     collection.find_one_and_update(
             {"_id": ObjectId(user_id)},
             {"$set": {"location": location}}
         )
     return {"detail": "succesfully set the user's location"}
+
+# update the location and lat long attribute of the user
+@router.put("/update_user_location_and_latlong/")
+async def update_user_location_and_latlong(form: UserLocLatLong):
+    form = dict(form)
+    user_id = form.get("id")
+    location = form.get("location")
+    latitude = form.get("latitude")
+    longitude = form.get("longitude")
+    collection.find_one_and_update(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"location": location, "latitude": latitude, "longitude": longitude}}
+        )
+    return {"detail": "succesfully set the user's location and lat long"}
 
 # update the location attribute of the user
 @router.put("/update_user_lat_long/")

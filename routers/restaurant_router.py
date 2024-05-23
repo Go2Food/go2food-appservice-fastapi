@@ -82,7 +82,7 @@ async def update_restaurant_rating(form: RestaurantRating):
         })
     completed_order_collection.find_one_and_update(
         {"_id": ObjectId(order_id)},
-        {"$set": {"status": "rated"}}
+        {"$set": {"status": "rated", "rating": rating}}
     )
     return {"detail": "data updated"}
 
@@ -93,6 +93,8 @@ async def get_restaurants_based_on_query(form: RestaurantQuery):
     tags = form.get("tags")
     currentpage = form.get("currentpage")
     itemperpage = form.get("itemperpage")
+    radius = form.get("radius")
+    rating_treshold = form.get("rating_treshold")
     start = (currentpage - 1) * itemperpage
     end = start + itemperpage
     if tags != []:
@@ -104,6 +106,16 @@ async def get_restaurants_based_on_query(form: RestaurantQuery):
         distance = geopy.distance.geodesic((form.get('latitude'), form.get("longitude")), (restaurant['latitude'], restaurant['longitude'])).km
         distance = ceil(distance*100)/100
         restaurant['distance'] = distance
+        if (radius != -1 and distance > radius):
+            try:
+                del restaurants[restaurant]
+            except:
+                pass
+        if (rating_treshold != -1 and rating_treshold > restaurant["rating"]):
+            try:
+                del restaurants[restaurant]
+            except:
+                pass
     
     final_res = sorted(restaurants, key=lambda item: (-item['rating'], item['distance']))
     max_page = -(len(final_res) // -itemperpage)
@@ -125,6 +137,32 @@ async def get_recent_restaurants(form: IdLocationForm):
     form = dict(form)
     user_id = form.get("id")
     recent_orders_datas = completed_order_collection.find({"user_id": user_id})
+    restaurant_ids = []
+    if recent_orders_datas is not None:
+        for recent_orders_data in recent_orders_datas:
+            recent_orders_data = dict(recent_orders_data)
+            restaurant_ids.append(ObjectId(recent_orders_data["restaurant_id"]))
+        
+        restaurants = []
+        for restaurant_id in restaurant_ids:
+            restaurant = collection.find_one({"_id": restaurant_id})
+            restaurant["_id"] = str(restaurant["_id"])
+            distance = geopy.distance.geodesic((form.get('latitude'), form.get("longitude")), (restaurant['latitude'], restaurant['longitude'])).km
+            distance = ceil(distance*100)/100
+            restaurant['distance'] = distance
+            rating = (sum(restaurant["rating"])/len(restaurant["rating"])) if len(restaurant["rating"]) > 0 else 0
+            rating = ceil(rating*100)/100
+            restaurant["rating"] = rating
+            restaurants.append(restaurant)
+
+        return restaurants
+    return []
+
+@router.post("/get_recent_restaurants_sorted/")
+async def get_recent_restaurants_sorted(form: IdLocationForm):
+    form = dict(form)
+    user_id = form.get("id")
+    recent_orders_datas = completed_order_collection.find({"user_id": user_id}).sort({"_id": DESCENDING})
     restaurant_ids = []
     if recent_orders_datas is not None:
         for recent_orders_data in recent_orders_datas:

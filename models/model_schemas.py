@@ -39,6 +39,8 @@ class RestaurantQuery(BaseModel):
     tags: list[str]
     itemperpage: int
     currentpage: int
+    radius: float
+    rating_treshold: float
 
 class RestaurantRating(BaseModel):
     id: str
@@ -48,3 +50,13 @@ class RestaurantRating(BaseModel):
 class UserLocation(BaseModel):
     id: str
     location: str
+
+class UserLocLatLong(BaseModel):
+    id: str
+    location: str
+    latitude: float
+    longitude: float
+
+class UserBalanceUpdate(BaseModel):
+    id: str
+    balance: float
