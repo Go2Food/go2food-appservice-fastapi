@@ -71,7 +71,7 @@ def test_update_balance():
             }
         )
         assert response.status_code == 200
-        assert response.json () == {}
+        assert response.json () == {'detail': 'the balance is updated'}
     except KeyError: 
         raise ValueError(f"Update balance test failed: {id_not_found_err_str}")
     
@@ -83,7 +83,7 @@ def test_upgrade_account_type():
             json={"id": temp_account_details["user_id"]}
         )
         assert response.status_code == 200
-        assert response.json() == {}
+        assert response.json() == {'detail': 'the user is now a premium user'}
     except KeyError:
         raise ValueError(f"Upgrade account test failed: {id_not_found_err_str}")
     
