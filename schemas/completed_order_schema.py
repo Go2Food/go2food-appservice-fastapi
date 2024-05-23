@@ -8,6 +8,8 @@ def individual_serial(completed_order) -> dict:
         "total_price": (completed_order["total_price"]),
         "latitude": (completed_order["latitude"]),
         "longitude": (completed_order["longitude"]),
+        "location": (completed_order["location"]),
+        "rating": (completed_order["rating"]),
         "order": (completed_order["order"]),
         "status": (completed_order["status"]),
         "completed": (completed_order["completed"]),

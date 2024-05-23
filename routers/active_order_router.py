@@ -147,6 +147,7 @@ async def add_active_order(
     total_price = form.get("total_price")
     latitude = form.get("latitude")
     longitude = form.get("longitude")
+    location = form.get("location")
     check = collection.find_one({"user_id": user_id})
 
     if check is None:
@@ -175,6 +176,7 @@ async def add_active_order(
                     longitude=longitude,
                     order=list_order,
                     status="pending",
+                    location=location,
                     created=datetime.now(),
                     )
 
@@ -193,6 +195,7 @@ async def complete_active_order(form: GetById):
     active_order_data["status"] = "unrated"
     active_order_data["completed"] = datetime.now()
     active_order_data["restaurant_name"] = restaurant_data["name"]
+    active_order_data["rating"] = 0
 
     if active_order_data is not None:
         await add_completed_order(active_order_data)

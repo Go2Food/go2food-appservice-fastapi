@@ -7,6 +7,7 @@ def individual_serial(order) -> dict:
         "total_price": (order["total_price"]),
         "latitude": (order["latitude"]),
         "longitude": (order["longitude"]),
+        "location": (order["location"]),
         "order": (order["order"]),
         "status": (order["status"]),
         "created": (order["created"]),

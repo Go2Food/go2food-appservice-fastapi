@@ -17,6 +17,8 @@ class CompletedOrder(BaseModel):
     status: str
     latitude: float
     longitude: float
+    location: str
+    rating: int
     completed: datetime
 
 class NewOrder(BaseModel):

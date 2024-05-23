@@ -16,6 +16,7 @@ class ActiveOrder(BaseModel):
     status: str
     latitude: float
     longitude: float
+    location: str
     created: datetime
 
 class NewOrder(BaseModel):
@@ -25,4 +26,5 @@ class NewOrder(BaseModel):
     total_price: float
     latitude: float
     longitude: float
+    location: str
     order: list[Item]
