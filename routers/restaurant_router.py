@@ -95,8 +95,11 @@ async def get_restaurants_based_on_query(form: RestaurantQuery):
     itemperpage = form.get("itemperpage")
     radius = form.get("radius")
     rating_treshold = form.get("rating_treshold")
+    print(rating_treshold)
+    print(radius)
     start = (currentpage - 1) * itemperpage
     end = start + itemperpage
+    search_result = []
     if tags != []:
         restaurants = restaurant_list_serial(collection.find({"name":{"$regex":name, "$options": "i"}, "categories": {"$in": tags}}))
     else:
@@ -107,17 +110,12 @@ async def get_restaurants_based_on_query(form: RestaurantQuery):
         distance = ceil(distance*100)/100
         restaurant['distance'] = distance
         if (radius != -1 and distance > radius):
-            try:
-                del restaurants[restaurant]
-            except:
-                pass
+            continue
         if (rating_treshold != -1 and rating_treshold > restaurant["rating"]):
-            try:
-                del restaurants[restaurant]
-            except:
-                pass
+            continue
+        search_result.append(restaurant)
     
-    final_res = sorted(restaurants, key=lambda item: (-item['rating'], item['distance']))
+    final_res = sorted(search_result, key=lambda item: (-item['rating'], item['distance']))
     max_page = -(len(final_res) // -itemperpage)
     return {"max_page": max_page, "datas": final_res[start:end]}
 
@@ -181,7 +179,7 @@ async def get_recent_restaurants_sorted(form: IdLocationForm):
             restaurant["rating"] = rating
             restaurants.append(restaurant)
 
-        return restaurants
+        return restaurants[0:8]
     return []
 
 # add a restaurant to the database
