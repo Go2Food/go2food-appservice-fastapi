@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
-
 from main import app
+import random
+import string
 
 client = TestClient(app=app)
 
@@ -11,15 +12,38 @@ headers = {
 }
 id_not_found_err_str = "User ID not found. Possible error on the login validation step"
 
+# random account_generator
+# email and username
+email = ""
+username = ""
+sub_domains_count = random.choice([1, 2, 3]) # first part before @, e.g. xxx.xxx@xxx.com
+for i in range(sub_domains_count):
+    length = random.choice([4, 5, 6, 7, 8, 9, 10]) # letter count in domain, e.g. john.doe@xxx.com
+    for j in range(length):
+        email += "".join(random.choices(string.ascii_lowercase))
+    if i == sub_domains_count - 1:
+        username += email
+        email += "@example.com"
+    else:
+        email += random.choice(["-", ".", "_"])
+temp_account_details["email"] = email
+temp_account_details["username"] = username
+
+# password
+pw_length = random.choice([7, 8, 9, 10, 11]) # 7 because 1 character is already added
+pw = random.choice(string.ascii_letters)
+pw += "".join(random.choices(string.ascii_letters + string.digits + "!@#$%^&*()-_+=", k=pw_length))
+temp_account_details["password"] = pw
+
+print("\nGENERATED ACCOUNT DETAILS:")
+print(temp_account_details)
+
 def test_read_main():
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Smile and Wave Boys!"}
     
 def test_register_account():
-    temp_account_details["email"] = "tobrutenak@gmail.com"
-    temp_account_details["username"] = "tobrutenakbanget"
-    temp_account_details["password"] = "tobrutenakbanget"
     response = client.post(
         "/register",
         headers=headers,
