@@ -123,6 +123,28 @@ def test_downgrade_account_type():
     except KeyError:
         raise ValueError(f"Downgrade account test failed: {id_not_found_err_str}")
     
+def test_update_location_lat_lng():
+    random_lat = [random.randint(-90, 90) for _ in range(2)]
+    random_lat = random_lat[0] / random_lat[1]
+    random_lng = [random.randint(-180, 180) for _ in range(2)]
+    random_lng = random_lng[0] / random_lng[1]
+    
+    try:
+        response = client.post(
+            "/update_user_location_and_latlong", 
+            headers=headers, 
+            json={
+                "id": temp_account_details["user_id"],
+                "location": "Some place's name on earth",
+                "latitude": random_lat,
+                "longitude": random_lng,
+            }
+        )
+        assert response.status_code == 200
+        assert response.json() == {"detail": "succesfully set the user's location and lat long"}
+    except KeyError:
+        raise ValueError(f"Update location test failed: {id_not_found_err_str}")
+    
 def test_delete_account():
     try:
         user_id = temp_account_details["user_id"]
