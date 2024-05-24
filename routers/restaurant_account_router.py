@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from schemas.restaurant_account_schema import restaurant_account_id_list_serial, restaurant_account_pass_prot_list_serial
 from models.account_model import Account
-from models.model_schemas import PassCheck, ValidateToken, NewAccountGoogle, NewRestaurantAccount, GetById
+from models.model_schemas import PassCheck, ValidateToken, RestaurantAccountRestaurant, NewRestaurantAccount, GetById
 from functions.bcrypt_handler import bcrypt_handler_class
 from functions.jwt_authorization import AuthHandler
 from bson import ObjectId
@@ -45,8 +45,22 @@ async def register_restaurant_account(account: NewRestaurantAccount):
         return {"detail": "registration success"}
     except:
         return {"detail": "registration failed"}
-    
 
+@router.put("/edit_restaurant_account_restaurant/")
+async def edit_restaurant_account_restaurant(form: RestaurantAccountRestaurant):
+    form = dict(form)
+    account_id = form.get("account_id")
+    restaurant_id = form.get("restaurant_id")
+    
+    collection.find_one_and_update(
+            {
+                "_id": ObjectId(account_id)
+            },
+            {
+                "$set": {"restaurant": restaurant_id}
+            }
+        )
+    return {"detail": "restaurant account's restaurant succesfully updated"}
 
 # login a user account
 @router.post("/login_restaurant_account/")
