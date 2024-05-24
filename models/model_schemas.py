@@ -9,6 +9,10 @@ class NewRestaurantAccount(BaseModel):
     email: str
     password: str
 
+class RestaurantAccountRestaurant(BaseModel):
+    account_id: str
+    restaurant_id: str
+
 class NewAccountGoogle(BaseModel):
     email: str
     username: str
